@@ -8,7 +8,7 @@ Usage:
 
 data-retrieval utils regression tester.
 
-This tool executes several versions of data-retrieval utils and compares query times and resource usage. There should be at least two versions specified as arguments in the following way:
+This tool executes several versions of data-retrieval utils and compares query times and resource usage. There should be at least one version specified as an argument in the following way:
 
 * v0.12.1 - release name from github (https://github.com/src-d/your-data-retrieval-util/releases). The binary will be downloaded.
 * latest - latest release from github. The binary will be downloaded.
