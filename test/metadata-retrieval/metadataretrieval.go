@@ -2,7 +2,6 @@ package metadataretrieval
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -13,11 +12,10 @@ import (
 
 	"github.com/src-d/regression-core"
 	"gopkg.in/src-d/go-log.v1"
-	"gopkg.in/yaml.v2"
 )
 
 type (
-	metadataRetrievalResults map[string][]*Result
+	metadataRetrievalResults map[string][]*test.Result
 	versionResults           map[string]metadataRetrievalResults
 
 	// Test holds the information about a metadata-retrieval test
@@ -30,6 +28,8 @@ type (
 		log           log.Logger
 	}
 )
+
+// TODO(kyrcha): refactor in order to make the code DRY (gitcollector.go and metadataretrieval.go)
 
 // Kind is an identifier of util type to be tested, used in factory test constructor
 const Kind = "metadata-retrieval"
@@ -108,7 +108,7 @@ func (t *Test) RunLoad() error {
 		t.organizations = []string{"git-fixtures"}
 
 		for _, orgs := range t.organizations {
-			results[version][orgs] = make([]*Result, times)
+			results[version][orgs] = make([]*test.Result, times)
 			for i := 0; i < times; i++ {
 				l.New(log.Fields{
 					"orgs": orgs,
@@ -133,7 +133,7 @@ func (t *Test) RunLoad() error {
 func (t *Test) runLoadTest(
 	metadataRetrieval *regression.Binary,
 	orgs string,
-) (*Result, error) {
+) (*test.Result, error) {
 	t.log.Infof("Executing metadata-retrieval test")
 
 	command := NewCommand(metadataRetrieval.Path, orgs)
@@ -163,7 +163,7 @@ func (t *Test) runLoadTest(
 		Memory: rusage.Maxrss * 1024,
 	}
 
-	r := &Result{
+	r := &test.Result{
 		Result:        result,
 		Organizations: orgs,
 	}
@@ -269,8 +269,8 @@ func (t *Test) GetResults() bool {
 			queryA := a[orgs][0]
 			queryB := b[orgs][0]
 
-			queryA.Result = average(a[orgs])
-			queryB.Result = average(b[orgs])
+			queryA.Result = test.Average(a[orgs])
+			queryB.Result = test.Average(b[orgs])
 			c := queryA.Result.ComparePrint(queryB.Result, 10.0)
 			if !c {
 				ok = false
@@ -288,7 +288,7 @@ func (t *Test) GetResults() bool {
 func (t *Test) SaveLatestCSV() {
 	version := t.config.Versions[len(t.config.Versions)-1]
 	for _, orgs := range t.organizations {
-		res := average(t.results[version][orgs])
+		res := test.Average(t.results[version][orgs])
 		if err := res.SaveAllCSV(fmt.Sprintf("plot_%s_", strings.Replace(orgs, ",", "_", -1))); err != nil {
 			panic(err)
 		}
@@ -300,38 +300,10 @@ func (t *Test) StoreLatestToPrometheus(promConfig regression.PromConfig, ciConfi
 	version := t.config.Versions[len(t.config.Versions)-1]
 	cli := prometheus.NewPromClient(Kind, promConfig)
 	for _, orgs := range t.organizations {
-		res := average(t.results[version][orgs])
+		res := test.Average(t.results[version][orgs])
 		if err := cli.Dump(res, version, orgs, ciConfig.Branch, ciConfig.Commit); err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-func average(pr []*Result) *regression.Result {
-	if len(pr) == 0 {
-		return nil
-	}
-
-	results := make([]*regression.Result, 0, len(pr))
-	for _, r := range pr {
-		results = append(results, r.Result)
-	}
-
-	return regression.Average(results)
-}
-
-func loadOrganizationsYaml(file string) ([]string, error) {
-	text, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil, err
-	}
-
-	var res []string
-	err = yaml.Unmarshal(text, &res)
-	if err != nil {
-		return nil, err
-	}
-
-	return res, nil
 }

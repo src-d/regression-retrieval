@@ -17,6 +17,9 @@ func NewToolMetadataRetrieval() regression.Tool {
 				Env:     []string{"GOPROXY=https://proxy.golang.org"},
 			},
 		},
+		ExtraFiles: []string{
+			"testdata/regression.yml",
+		},
 	}
 }
 

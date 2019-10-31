@@ -4,8 +4,6 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
-
-	"github.com/src-d/regression-core"
 )
 
 // Command wraps a metadata-retrieval server instance.
@@ -27,14 +25,6 @@ func NewCommand(binary, orgs string) *Command {
 
 // Run runs metadata-retrieval util to discover and download organizations
 func (c *Command) Run(envs map[string]string) error {
-	// TODO(kyrcha): Probably not needed since there is no download of data
-	tmpDir, err := regression.CreateTempDir()
-	if err != nil {
-		return err
-	}
-	c.dir = tmpDir
-	defer c.Cleanup()
-
 	c.cmd = exec.Command(
 		c.binary,
 		"ghsync",
@@ -58,10 +48,4 @@ func (c *Command) Run(envs map[string]string) error {
 func (c *Command) Rusage() *syscall.Rusage {
 	rusage, _ := c.cmd.ProcessState.SysUsage().(*syscall.Rusage)
 	return rusage
-}
-
-// Cleanup removes metadata-retrieval's library directory
-func (c *Command) Cleanup() error {
-	// TODO(kyrcha): Probably not needed since there is no download of data
-	return os.RemoveAll(c.dir)
 }

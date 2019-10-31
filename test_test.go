@@ -41,7 +41,7 @@ func TestMetadataRetrieval(t *testing.T) {
 	config.BinaryCache = "binaries"
 	config.Versions = []string{"remote:master", "v0.1.0"}
 	config.Repeat = 1
-	// No token, no access to teh v4 API
+	// No token, no access to the v4 API
 	config.GitHubToken = os.Getenv("REG_TOKEN")
 
 	metadataRetrievalTest, err := test.NewTest(metadataretrieval.Kind, config)
