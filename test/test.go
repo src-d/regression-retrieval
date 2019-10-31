@@ -1,12 +1,21 @@
 package test
 
 import (
+	"io/ioutil"
+
 	"github.com/src-d/regression-core"
 	"gopkg.in/src-d/go-errors.v1"
+	"gopkg.in/yaml.v2"
 )
 
 // Constructor is a type that represents function of default Test Constructor
 type Constructor func(config regression.Config) (Test, error)
+
+// Result is a wrapper around regression.Result that additionally contains organizations that were processed
+type Result struct {
+	*regression.Result
+	Organizations string
+}
 
 var (
 	// constructors is a map of all supported test constructors
@@ -53,4 +62,32 @@ func ValidateKind(kind string) (Constructor, error) {
 	}
 
 	return c, nil
+}
+
+func Average(pr []*Result) *regression.Result {
+	if len(pr) == 0 {
+		return nil
+	}
+
+	results := make([]*regression.Result, 0, len(pr))
+	for _, r := range pr {
+		results = append(results, r.Result)
+	}
+
+	return regression.Average(results)
+}
+
+func LoadOrganizationsYaml(file string) ([]string, error) {
+	text, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+
+	var res []string
+	err = yaml.Unmarshal(text, &res)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }

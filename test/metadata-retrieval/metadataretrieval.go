@@ -1,4 +1,4 @@
-package gitcollector
+package metadataretrieval
 
 import (
 	"fmt"
@@ -15,13 +15,13 @@ import (
 )
 
 type (
-	gitCollectorResults map[string][]*test.Result
-	versionResults      map[string]gitCollectorResults
+	metadataRetrievalResults map[string][]*test.Result
+	versionResults           map[string]metadataRetrievalResults
 
-	// Test holds the information about a gitcollector test
+	// Test holds the information about a metadata-retrieval test
 	Test struct {
-		config       regression.Config
-		gitCollector map[string]*regression.Binary
+		config            regression.Config
+		metadataRetrieval map[string]*regression.Binary
 		// organizations is array of lists of coma-separated organizations
 		organizations []string
 		results       versionResults
@@ -29,11 +29,19 @@ type (
 	}
 )
 
+// TODO(kyrcha): refactor in order to make the code DRY (gitcollector.go and metadataretrieval.go)
+
 // Kind is an identifier of util type to be tested, used in factory test constructor
-const Kind = "gitcollector"
+const Kind = "metadata-retrieval"
 
 func init() {
 	test.Register(Kind, NewTest)
+}
+
+// Result is a wrapper around regression.Result that additionally contains organizations that were processed
+type Result struct {
+	*regression.Result
+	Organizations string
 }
 
 // NewTest creates a new Test struct
@@ -49,24 +57,24 @@ func NewTest(config regression.Config) (test.Test, error) {
 	}, nil
 }
 
-// Prepare downloads and builds required gitcollectors versions
+// Prepare downloads and builds required metadata-retrieval versions
 func (t *Test) Prepare() error {
-	return t.prepareGitCollector()
+	return t.prepareMetadataRetrieval()
 }
 
-func (t *Test) prepareGitCollector() error {
-	t.log.Infof("Preparing gitcollector binaries")
-	releases := regression.NewReleases("src-d", "gitcollector", t.config.GitHubToken)
+func (t *Test) prepareMetadataRetrieval() error {
+	t.log.Infof("Preparing metadata-retrieval binaries")
+	releases := regression.NewReleases("src-d", "metadata-retrieval", t.config.GitHubToken)
 
-	t.gitCollector = make(map[string]*regression.Binary, len(t.config.Versions))
+	t.metadataRetrieval = make(map[string]*regression.Binary, len(t.config.Versions))
 	for _, version := range t.config.Versions {
-		b := NewGitCollector(t.config, version, releases)
+		b := NewMetadataRetrieval(t.config, version, releases)
 		err := b.Download()
 		if err != nil {
 			return err
 		}
 
-		t.gitCollector[version] = b
+		t.metadataRetrieval[version] = b
 	}
 
 	return nil
@@ -79,12 +87,12 @@ func (t *Test) RunLoad() error {
 	for _, version := range t.config.Versions {
 		_, ok := results[version]
 		if !ok {
-			results[version] = make(gitCollectorResults)
+			results[version] = make(metadataRetrievalResults)
 		}
 
-		gitCollector, ok := t.gitCollector[version]
+		metadataRetrieval, ok := t.metadataRetrieval[version]
 		if !ok {
-			panic("gitcollector not initialized. Was Prepare called?")
+			panic("metadataRetrieval not initialized. Was Prepare called?")
 		}
 
 		l := t.log.New(log.Fields{"version": version})
@@ -96,12 +104,8 @@ func (t *Test) RunLoad() error {
 			times = 1
 		}
 
-		rf := gitCollector.ExtraFile("regression.yml")
-		if organizations, err := test.LoadOrganizationsYaml(rf); err != nil {
-			return err
-		} else {
-			t.organizations = organizations
-		}
+		// TODO(kyrcha): add a regression.yml file to metadata-retrieval
+		t.organizations = []string{"git-fixtures"}
 
 		for _, orgs := range t.organizations {
 			results[version][orgs] = make([]*test.Result, times)
@@ -110,7 +114,7 @@ func (t *Test) RunLoad() error {
 					"orgs": orgs,
 				}).Infof("Running query")
 
-				result, err := t.runLoadTest(gitCollector, orgs)
+				result, err := t.runLoadTest(metadataRetrieval, orgs)
 				results[version][orgs][i] = result
 
 				if err != nil {
@@ -125,23 +129,23 @@ func (t *Test) RunLoad() error {
 	return nil
 }
 
-// runLoadTest runs gitcollector download command and saves execution time + memory usage
+// runLoadTest runs metadata-retrieval download command and saves execution time + memory usage
 func (t *Test) runLoadTest(
-	gitCollector *regression.Binary,
+	metadataRetrieval *regression.Binary,
 	orgs string,
 ) (*test.Result, error) {
-	t.log.Infof("Executing gitcollector test")
+	t.log.Infof("Executing metadata-retrieval test")
 
-	command := NewCommand(gitCollector.Path, orgs)
+	command := NewCommand(metadataRetrieval.Path, orgs)
 	start := time.Now()
 	if err := command.Run(map[string]string{
-		"LOG_LEVEL":    "debug",
-		"GITHUB_TOKEN": t.config.GitHubToken,
+		"LOG_LEVEL":     "debug",
+		"GITHUB_TOKENS": t.config.GitHubToken,
 	}); err != nil {
 		t.log.With(log.Fields{
-			"orgs":         orgs,
-			"gitcollector": gitCollector.Path,
-		}).Errorf(err, "Could not execute gitcollector")
+			"orgs":               orgs,
+			"metadata-retrieval": metadataRetrieval.Path,
+		}).Errorf(err, "Could not execute metadata-retrieval")
 		return nil, err
 	}
 	wall := time.Since(start)

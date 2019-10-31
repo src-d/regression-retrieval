@@ -1,0 +1,9 @@
+# downloads
+binaries
+
+#ci
+.ci/
+
+# coverage
+coverage.out
+coverage.txt

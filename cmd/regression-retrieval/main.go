@@ -5,6 +5,7 @@ import (
 
 	"github.com/src-d/regression-retrieval/test"
 	_ "github.com/src-d/regression-retrieval/test/gitcollector"
+	_ "github.com/src-d/regression-retrieval/test/metadata-retrieval"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/src-d/regression-core"
@@ -13,7 +14,7 @@ import (
 
 var description = `data-retrieval utils regression tester.
 
-This tool executes several versions of data-retrieval utils and compares query times and resource usage. There should be at least two versions specified as arguments in the following way:
+This tool executes several versions of data-retrieval utils and compares query times and resource usage. There should be at least one version specified as an argument in the following way:
 
 * v0.12.1 - release name from github (https://github.com/src-d/your-data-retrieval-util/releases). The binary will be downloaded.
 * latest - latest release from github. The binary will be downloaded.
@@ -26,6 +27,7 @@ This tool executes several versions of data-retrieval utils and compares query t
 The repositories and downloaded/built binaries are cached by default in "repos" and "binaries" repositories from the current directory.
 `
 
+// Options CLI options
 type Options struct {
 	regression.Config
 

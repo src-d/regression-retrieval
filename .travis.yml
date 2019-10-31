@@ -9,7 +9,7 @@ service:
   - docker
 
 env:
-  - GO111MODULE=on GOPROXY=https://proxy.golang.org
+  - GO111MODULE=on GOPROXY=https://proxy.golang.org REG_TOKEN=$GITHUB_TOKEN
 
 matrix:
   fast_finish: true
