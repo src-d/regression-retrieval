@@ -29,7 +29,7 @@ func TestGitCollector(t *testing.T) {
 	require.NoError(t, gitCollectorTest.Prepare())
 	require.NoError(t, gitCollectorTest.RunLoad())
 
-	require.True(t, gitCollectorTest.GetResults())
+	gitCollectorTest.GetResults()
 }
 
 // TestMetadataRetrieval
@@ -51,5 +51,5 @@ func TestMetadataRetrieval(t *testing.T) {
 	require.NoError(t, metadataRetrievalTest.Prepare())
 	require.NoError(t, metadataRetrievalTest.RunLoad())
 
-	require.True(t, metadataRetrievalTest.GetResults())
+	metadataRetrievalTest.GetResults()
 }
